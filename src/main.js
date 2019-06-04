@@ -5,6 +5,8 @@ import store from "./store";
 
 Vue.config.productionTip = false;
 
+import ScatterJS from "./api/ScatterJS";
+
 new Vue({
   router,
   store,

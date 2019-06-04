@@ -1,18 +1,23 @@
 <template>
   <div class="home">
-    <img alt="Vue logo" src="../assets/logo.png" />
-    <HelloWorld msg="Welcome to Your Vue.js App" />
+    <!-- <HelloWorld msg="Welcome to Your Vue.js App" /> -->
+    <button @click="login">login</button>
+    <button>logout</button>
   </div>
 </template>
 
 <script>
-// @ is an alias to /src
-import HelloWorld from "@/components/HelloWorld.vue";
+
+import scatter from "@/api/ScatterJS.js";
+import { constants } from 'crypto';
 
 export default {
   name: "home",
-  components: {
-    HelloWorld
+  methods:{
+    async login() {
+      const res = await scatter.scatterLogin()
+      console.log(res)
+    }
   }
 };
 </script>
