@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "core-js": "^2.6.5",
-    "eosjs": "^20.0.0",
+    "eosjs": "^16.0.9",
     "scatterjs-core": "^2.7.18",
     "scatterjs-plugin-eosjs": "^1.5.1",
     "scatterjs-plugin-eosjs2": "^1.5.0",
