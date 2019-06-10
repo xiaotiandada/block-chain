@@ -7,6 +7,7 @@
     <button @click="logout">logout</button>
     <button @click="sendTransfer">send</button>
     <button @click="getBalance">getBalance</button>
+    <button @click="getArbitrarySignature">getArbitrarySignature</button>
   </div>
 </template>
 
@@ -79,7 +80,7 @@ export default {
       if (!this.currentAccount) return // not login don't send transfer
       const account = ScatterJS.account('eos');
       const options = {authorization:[`${account.name}@${account.authority}`]};
-      await eosClient.transfer(account.name, account.name, '0.0001 EOS', account.name, options).then(res => {
+      await eosClient.transfer(account.name, 'qinxiaowen11', '0.0001 EOS', account.name, options).then(res => {
           console.log('sent: ', res);
       }).catch(err => {
           console.error('error: ', err);
@@ -92,6 +93,16 @@ export default {
         .then(data => {
           console.log(data[0])
         }).catch(() => console.log('get balance error'))
+    },
+    getArbitrarySignature() {
+      const publicKey = ScatterJS.identity.publicKey
+      const data = this.currentAccount.name
+      ScatterJS
+        .getArbitrarySignature(publicKey, data)
+        .then(signature => {
+          console.log(signature)
+        })
+        .catch(error => { console.log(error) });
     }
   }
 };
