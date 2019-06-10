@@ -6,26 +6,26 @@
     <button @click="login">login</button>
     <button @click="logout">logout</button>
     <button @click="sendTransfer">send</button>
+    <button @click="getBalance">getBalance</button>
   </div>
 </template>
 
 <script>
-import ScatterJS from "scatterjs-core";
-import ScatterEOS from "scatterjs-plugin-eosjs";
-import Eos from "eosjs";
+import ScatterJS from 'scatterjs-core';
+import ScatterEOS from 'scatterjs-plugin-eosjs';
+import Eos from 'eosjs';
 
-ScatterJS.plugins(new ScatterEOS());
+ScatterJS.plugins( new ScatterEOS() );
 
-const network = {
-  blockchain: "eos",
-  protocol: "https",
-  host: "nodes.get-scatter.com",
-  port: 443,
-  chainId: "aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906"
-};
+const network = ScatterJS.Network.fromJson({
+    blockchain:'eos',
+    chainId:'aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906',
+    host:'nodes.get-scatter.com',
+    port:443,
+    protocol:'https'
+});
 
-const requiredFields = { accounts: [network] };
-const eosOptions = { expireInSeconds:60 };
+
 let eosClient = null
 
 export default {
@@ -33,53 +33,65 @@ export default {
   data(){
     return{
       currentAccount : null,
-      scatter : null 
+      isConnect: false, //  是否连接
+
     }
   },
   created(){
-    ScatterJS.scatter.connect("EOS-APP").then(connected => {
-      if (!connected) return false;
-      this.scatter = ScatterJS.scatter;
-      console.log('ok')
-      window.scatter = null;
-      window.ScatterJS = null;
-    });
+    this.connect()
   },
   methods:{
+    async connect() {
+      await ScatterJS.connect("EOS-APP", {network}).then(connected => {
+        if(!connected) return console.error('no scatter');
+        console.log('connect success')
+        this.isConnect = true
+        this.setNetwork()
+      }).catch(error => console.log(`connect error: ${error}`))
+    },
+    async setNetwork() {
+      try {
+        eosClient = await ScatterJS.eos(network, Eos);
+        console.log('setNetwork success')
+      } catch (error) { console.log(`setNetwork error ${error}`)}
+    },
     async login() {
-      let { scatter } = this;
-      // 判断是否支持login方法 
-      let scatterLogin = null
-      if (scatter.login) scatterLogin = scatter.login
-      else if (scatter.getIdentity) scatterLogin = scatter.getIdentity
-      await scatterLogin(requiredFields)
-        .then(() => {
-          let account = scatter.identity.accounts.find(x => x.blockchain === "eos")
-          this.currentAccount = account
-          eosClient = scatter.eos(network, Eos, eosOptions);
+      if (!this.isConnect) return // not connect don't login
+      const requiredFields = { accounts:[network] };
+      await ScatterJS.login(requiredFields)
+        .then(id => {
+          if(!id) return console.error('no identity');
+          this.currentAccount = ScatterJS.account('eos');
+          console.log(this.currentAccount)
         })
         .catch(error =>  console.error(error));
     },
-    logout() {
-      // 如果logout 不支持使用 forgetIdentity
-      if (this.scatter.logout) this.scatter.logout()
-      else if (this.scatter.forgetIdentity) this.scatter.forgetIdentity()
-      this.currentAccount = null
-      console.log('logout')
-    },
-    sendTransfer() {
-      if (!this.currentAccount) return console.log('not login')
-      const transactionOptions = { 
-        authorization: [`${this.currentAccount.name}@${this.currentAccount.authority}`] 
-      };
-
-      eosClient
-        .transfer(this.currentAccount.name, this.currentAccount.name, '0.001 EOS', 'memo', transactionOptions)
-        .then(trx => {
-          console.log(trx);
-          console.log(`Transaction ID: ${trx.transaction_id}`);
+    async logout() {
+      await ScatterJS.logout()
+        .then(() => {
+          this.currentAccount = null
+          console.log('logout success')
         })
-        .catch(error => console.error(error));
+        .catch(() => console.log('logout fail'))
+    },
+    async sendTransfer() {
+      // error api show status 500 !!!
+      if (!this.currentAccount) return // not login don't send transfer
+      const account = ScatterJS.account('eos');
+      const options = {authorization:[`${account.name}@${account.authority}`]};
+      await eosClient.transfer(account.name, account.name, '0.0001 EOS', account.name, options).then(res => {
+          console.log('sent: ', res);
+      }).catch(err => {
+          console.error('error: ', err);
+      });
+    },
+    async getBalance() {
+      if (!this.currentAccount) return // not login don't get balance
+      await eosClient
+        .getCurrencyBalance("eosio.token", this.currentAccount.name, "EOS")
+        .then(data => {
+          console.log(data[0])
+        }).catch(() => console.log('get balance error'))
     }
   }
 };
