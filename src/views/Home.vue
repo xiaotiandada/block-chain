@@ -3,8 +3,8 @@
     <template v-if="currentAccount">
       <p>{{currentAccount.name}}</p>
     </template>
-    <button @click="login">login</button>
-    <button @click="logout">logout</button>
+    <button @click="loginButton">login</button>
+    <button @click="logoutButton">logout</button>
     <button @click="sendTransfer">send</button>
     <button @click="getBalance">getBalance</button>
     <button @click="getArbitrarySignature">getArbitrarySignature</button>
@@ -15,6 +15,8 @@
 import ScatterJS from 'scatterjs-core';
 import ScatterEOS from 'scatterjs-plugin-eosjs';
 import Eos from 'eosjs';
+
+import { mapState ,mapActions } from "vuex";
 
 ScatterJS.plugins( new ScatterEOS() );
 
@@ -33,47 +35,21 @@ export default {
   name: "home",
   data(){
     return{
-      currentAccount : null,
       isConnect: false, //  是否连接
-
     }
   },
   created(){
-    this.connect()
+  },
+  computed: {
+    ...mapState(['currentAccount']),
   },
   methods:{
-    async connect() {
-      await ScatterJS.connect("EOS-APP", {network}).then(connected => {
-        if(!connected) return console.error('no scatter');
-        console.log('connect success')
-        this.isConnect = true
-        this.setNetwork()
-      }).catch(error => console.log(`connect error: ${error}`))
+    ...mapActions(['login', 'logout']),
+    async loginButton() {
+      this.login('eos')
     },
-    async setNetwork() {
-      try {
-        eosClient = await ScatterJS.eos(network, Eos);
-        console.log('setNetwork success')
-      } catch (error) { console.log(`setNetwork error ${error}`)}
-    },
-    async login() {
-      if (!this.isConnect) return // not connect don't login
-      const requiredFields = { accounts:[network] };
-      await ScatterJS.login(requiredFields)
-        .then(id => {
-          if(!id) return console.error('no identity');
-          this.currentAccount = ScatterJS.account('eos');
-          console.log(this.currentAccount)
-        })
-        .catch(error =>  console.error(error));
-    },
-    async logout() {
-      await ScatterJS.logout()
-        .then(() => {
-          this.currentAccount = null
-          console.log('logout success')
-        })
-        .catch(() => console.log('logout fail'))
+    async logoutButton() {
+      this.logout()      
     },
     async sendTransfer() {
       // error api show status 500 !!!
@@ -103,7 +79,7 @@ export default {
           console.log(signature)
         })
         .catch(error => { console.log(error) });
-    }
+    },
   }
 };
 </script>
